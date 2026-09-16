@@ -34,11 +34,12 @@ public class Bootstrap : MonoBehaviour
 
         _wallet = new WalletModel(initialBalance: 0);
 
-        // 1. Создаем BoostService с параметрами из конфига
+        // 1. пїЅпїЅпїЅпїЅпїЅпїЅпїЅ BoostService пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
         _boostService = new BoostService(config.IsBoostEnabled, config.BoostMultiplier, config.BoostDurationSeconds);
 
-        // 2. Фабрика и карточки
-        MachineFactory machineFactory = new MachineFactory(_machinePrefab, _machinesContainer, _wallet);
+        // 2. пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+        MachineViewFactory machineViewFactory =
+            new MachineViewFactory(_machinePrefab, _machinesContainer, _wallet);
         List<MachineModel> machineModels = new List<MachineModel>();
 
         for (int i = 0; i < config.Machines.Length; i++)
@@ -51,20 +52,20 @@ public class Bootstrap : MonoBehaviour
             MachineModel machineModel = new MachineModel(machineConfig, initialState);
             machineModels.Add(machineModel);
 
-            MachinePresenter presenter = machineFactory.CreateMachine(machineModel);
+            MachinePresenter presenter = machineViewFactory.CreateMachine(machineModel);
             _machinePresenters.Add(presenter);
         }
 
-        // 3. Создаем FactoryModel
+        // 3. пїЅпїЅпїЅпїЅпїЅпїЅпїЅ FactoryModel
         _factoryModel = new FactoryModel(machineModels, _wallet, _boostService);
 
-        // 4. Презентер UI
+        // 4. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ UI
         if (_headerView != null)
         {
             _headerPresenter = new HeaderPresenter(_headerView, _factoryModel, _wallet, _boostService);
         }
 
-        // 5. Инициализируем переданный через Инспектор AppLifecycleScope
+        // 5. пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ AppLifecycleScope
         if (_lifecycleScope != null)
         {
             SaveService saveService = new SaveService();
@@ -92,7 +93,7 @@ public class Bootstrap : MonoBehaviour
     {
         float deltaTime = Time.deltaTime;
 
-        // Каждый кадр уменьшаем таймер буста и генерируем монеты
+        // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
         _boostService?.Tick(deltaTime);
         _factoryModel?.Tick(deltaTime);
     }
