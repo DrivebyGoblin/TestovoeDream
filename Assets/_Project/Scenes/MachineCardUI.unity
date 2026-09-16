@@ -1641,6 +1641,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1764834651}
   - component: {fileID: 1764834650}
+  - component: {fileID: 1764834652}
   m_Layer: 0
   m_Name: Bootstrap
   m_TagString: Untagged
@@ -1664,6 +1665,7 @@ MonoBehaviour:
   _headerView: {fileID: 910004}
   _machinePrefab: {fileID: 920000, guid: 71326d0c37b400cf9c179bac7f3ff616, type: 3}
   _machinesContainer: {fileID: 2095383354}
+  _lifecycleScope: {fileID: 1764834652}
 --- !u!4 &1764834651
 Transform:
   m_ObjectHideFlags: 0
@@ -1679,6 +1681,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1764834652
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1764834649}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abb5bd7cc6d76e343b0470fc9ec8f8ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AppLifecycleScope
 --- !u!1 &1981845497
 GameObject:
   m_ObjectHideFlags: 0

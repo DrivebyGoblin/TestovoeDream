@@ -1,6 +1,4 @@
 using System;
-using UnityEngine;
-
 public class WalletModel
 {
     public double Balance { get; private set; }

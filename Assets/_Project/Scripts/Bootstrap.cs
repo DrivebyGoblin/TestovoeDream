@@ -11,6 +11,9 @@ public class Bootstrap : MonoBehaviour
     [SerializeField] private MachineView _machinePrefab;
     [SerializeField] private Transform _machinesContainer;
 
+    [Header("Lifecycle & Persistence")]
+    [SerializeField] private AppLifecycleScope _lifecycleScope;
+
     private WalletModel _wallet;
     private FactoryModel _factoryModel;
     private BoostService _boostService;
@@ -60,6 +63,29 @@ public class Bootstrap : MonoBehaviour
         {
             _headerPresenter = new HeaderPresenter(_headerView, _factoryModel, _wallet, _boostService);
         }
+
+        // 5. Инициализируем переданный через Инспектор AppLifecycleScope
+        if (_lifecycleScope != null)
+        {
+            SaveService saveService = new SaveService();
+            OfflineProgressService offlineService = new OfflineProgressService();
+
+            _lifecycleScope.Construct(
+                _wallet,
+                _factoryModel,
+                _boostService,
+                machineModels,
+                saveService,
+                offlineService,
+                config
+            );
+
+            _lifecycleScope.RestoreStateAndProcessOffline();
+        }
+        else
+        {
+            Debug.LogWarning("[Bootstrap] AppLifecycleScope is missing in Inspector!");
+        }
     }
 
     private void Update()
@@ -82,7 +108,6 @@ public class Bootstrap : MonoBehaviour
 
         _machinePresenters.Clear();
     }
-
 
 
 

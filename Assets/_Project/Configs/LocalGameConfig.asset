@@ -38,7 +38,7 @@ MonoBehaviour:
       CostMultiplier: 1.4
       ProductionMultiplier: 1.4
       IsUnlockedByDefault: 0
-    IsBoostEnabled: 0
+    IsBoostEnabled: 1
     BoostMultiplier: 2
     BoostDurationSeconds: 30
     MaxOfflineSeconds: 86400

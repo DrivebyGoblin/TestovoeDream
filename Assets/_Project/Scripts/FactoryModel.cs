@@ -45,4 +45,15 @@ public class FactoryModel
             _wallet.Add(income);
         }
     }
+
+    // Внутри FactoryModel.cs:
+    public double GetBaseProductionWithoutBoost()
+    {
+        double total = 0;
+        for (int i = 0; i < _machines.Count; i++)
+        {
+            total += _machines[i].GetCurrentProduction();
+        }
+        return total;
+    }
 }
