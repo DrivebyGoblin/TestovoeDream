@@ -11,6 +11,7 @@ public class AppLifecycleScope : MonoBehaviour
     private List<MachineModel> _machines;
     private SaveService _saveService;
     private OfflineProgressService _offlineService;
+    private PurchaseHistory _purchaseHistory;
     private GameConfig _config;
 
     public void Construct(
@@ -20,6 +21,7 @@ public class AppLifecycleScope : MonoBehaviour
         List<MachineModel> machines,
         SaveService saveService,
         OfflineProgressService offlineService,
+        PurchaseHistory purchaseHistory,
         GameConfig config)
     {
         _wallet = wallet;
@@ -28,6 +30,7 @@ public class AppLifecycleScope : MonoBehaviour
         _machines = machines;
         _saveService = saveService;
         _offlineService = offlineService;
+        _purchaseHistory = purchaseHistory;
         _config = config;
     }
 
@@ -46,14 +49,18 @@ public class AppLifecycleScope : MonoBehaviour
 
     public void SaveGameState()
     {
-        if (_wallet == null) return;
+        if (_wallet == null)
+        {
+            return;
+        }
 
         SaveData data = new SaveData
         {
             Balance = _wallet.Balance,
             LastExitTime = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
             BoostRemainingTime = _boostService.RemainingTime,
-            Machines = new List<MachineSaveData>()
+            Machines = new List<MachineSaveData>(),
+            ProcessedPurchaseIds = _purchaseHistory.CreateSnapshot()
         };
 
         for (int i = 0; i < _machines.Count; i++)
@@ -67,7 +74,7 @@ public class AppLifecycleScope : MonoBehaviour
         }
 
         _saveService.Save(data);
-        Debug.Log($"<color=cyan>[SAVE]</color> Сохранено! Время: {data.LastExitTime}");
+        Debug.Log($"[Save] Progress saved at {data.LastExitTime}.");
     }
 
     public void RestoreStateAndProcessOffline()
@@ -75,51 +82,72 @@ public class AppLifecycleScope : MonoBehaviour
         SaveData data = _saveService.Load();
         if (data == null)
         {
-            Debug.Log("<color=orange>[OFFLINE]</color> Сохранение не найдено (первый запуск).");
+            Debug.Log("[Save] No previous progress found.");
             return;
         }
 
-        // 1. Восстанавливаем машины
-        for (int i = 0; i < data.Machines.Count; i++)
+        _purchaseHistory.Restore(data.ProcessedPurchaseIds);
+        RestoreMachines(data.Machines);
+        _wallet.Add(data.Balance);
+        ApplyOfflineProgress(data);
+    }
+
+    private void RestoreMachines(List<MachineSaveData> savedMachines)
+    {
+        if (savedMachines == null)
         {
-            var savedMachine = data.Machines[i];
-            var model = _machines.Find(m => m.Config.Id == savedMachine.Id);
-            if (model != null)
+            return;
+        }
+
+        for (int i = 0; i < savedMachines.Count; i++)
+        {
+            MachineSaveData savedMachine = savedMachines[i];
+            MachineModel model = _machines.Find(machine => machine.Config.Id == savedMachine.Id);
+            if (model == null)
             {
-                if (savedMachine.IsUnlocked) model.Unlock();
-                for (int lvl = 1; lvl < savedMachine.Level; lvl++) model.LevelUp();
+                continue;
+            }
+
+            if (savedMachine.IsUnlocked)
+            {
+                model.Unlock();
+            }
+
+            for (int level = 1; level < savedMachine.Level; level++)
+            {
+                model.LevelUp();
             }
         }
+    }
 
-        // 2. Восстанавливаем сохранившийся баланс
-        _wallet.Add(data.Balance);
-
-        // 3. Парсим дату с InvariantCulture для защиты от локали
-        if (DateTime.TryParse(data.LastExitTime, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime lastExit))
+    private void ApplyOfflineProgress(SaveData data)
+    {
+        if (!DateTime.TryParse(
+                data.LastExitTime,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind,
+                out DateTime lastExit))
         {
-            double baseProduction = _factoryModel.GetBaseProductionWithoutBoost();
-
-            var result = _offlineService.Calculate(
-                lastExitTime: lastExit,
-                currentTime: DateTime.UtcNow,
-                maxOfflineDuration: _config.MaxOfflineSeconds,
-                remainingBoostTime: data.BoostRemainingTime,
-                boostMultiplier: _config.BoostMultiplier,
-                baseProductionPerSecond: baseProduction
-            );
-
-            Debug.LogWarning($"<color=yellow>[OFFLINE LOG]</color> Прошло сек: {result.ElapsedSeconds:F1}s | " +
-                             $"Базовый доход/сек: {baseProduction} | " +
-                             $"Начислено оффлайн-монет: {result.EarnedCoins:F0}");
-
-            _wallet.Add(result.EarnedCoins);
-
-            float newBoostTime = Mathf.Max(0, data.BoostRemainingTime - result.ElapsedSeconds);
-            _boostService.SetRemainingTime(newBoostTime);
+            Debug.LogWarning($"[Offline] Invalid saved timestamp: {data.LastExitTime}");
+            return;
         }
-        else
-        {
-            Debug.LogError($"[OFFLINE ERROR] Не удалось распарсить дату: {data.LastExitTime}");
-        }
+
+        double baseProduction = _factoryModel.GetBaseProductionWithoutBoost();
+        OfflineProgressService.OfflineResult result = _offlineService.Calculate(
+            lastExitTime: lastExit,
+            currentTime: DateTime.UtcNow,
+            maxOfflineDuration: _config.MaxOfflineSeconds,
+            remainingBoostTime: data.BoostRemainingTime,
+            boostMultiplier: _config.BoostMultiplier,
+            baseProductionPerSecond: baseProduction);
+
+        _wallet.Add(result.EarnedCoins);
+
+        float remainingBoostTime = Mathf.Max(0f, data.BoostRemainingTime - result.ElapsedSeconds);
+        _boostService.SetRemainingTime(remainingBoostTime);
+
+        Debug.Log(
+            $"[Offline] Elapsed: {result.ElapsedSeconds:F1}s, " +
+            $"production: {baseProduction:F1}/s, earned: {result.EarnedCoins:F0}.");
     }
 }

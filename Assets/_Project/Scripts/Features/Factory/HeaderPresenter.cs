@@ -1,7 +1,8 @@
 using System;
+using System.Threading.Tasks;
+using UnityEngine;
 
-
-public class HeaderPresenter : IDisposable
+public sealed class HeaderPresenter : IDisposable
 {
     private readonly HeaderView _view;
     private readonly FactoryModel _factoryModel;
@@ -20,9 +21,7 @@ public class HeaderPresenter : IDisposable
         _boostService.OnBoostStateChanged += HandleBoostStateChanged;
         _view.OnBoostClicked += HandleBoostClicked;
 
-        // ѕоказываем или скрываем панель буста в зависимости от настроек конфига
         _view.SetBoostFeatureActive(_boostService.IsFeatureEnabled);
-
         UpdateView();
     }
 
@@ -52,3 +51,5 @@ public class HeaderPresenter : IDisposable
         _view.SetBoostState(_boostService.IsActive);
     }
 }
+
+

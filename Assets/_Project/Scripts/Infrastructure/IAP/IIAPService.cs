@@ -1,16 +1,22 @@
-using UnityEngine;
+using System;
+using System.Threading.Tasks;
 
-public class IIAPService : MonoBehaviour
+public interface IIAPService : IDisposable
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
+    bool IsInitialized { get; }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    event Action<IAPProduct> OnProductReceived;
+    event Action<IAPPurchase> OnPurchasePending;
+    event Action<IAPFailure> OnPurchaseFailed;
+    event Action<string> OnPurchaseDeferred;
+    event Action<string> OnUnavailable;
+
+    Task InitializeAsync(string productId);
+    void BuyProduct(string productId);
+    void ConfirmPurchase(string transactionId);
 }
+
+
+
+
+

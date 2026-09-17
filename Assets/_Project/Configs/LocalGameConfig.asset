@@ -42,3 +42,6 @@ MonoBehaviour:
     BoostMultiplier: 2
     BoostDurationSeconds: 30
     MaxOfflineSeconds: 86400
+    IsPurchasingEnabled: 1
+    CoinsPackProductId: coins_pack_small
+    CoinsPackReward: 1000
