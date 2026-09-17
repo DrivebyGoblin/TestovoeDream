@@ -92,6 +92,7 @@ public sealed class StorePresenter : IDisposable
                 _wallet.Add(_reward);
                 _purchaseHistory.MarkProcessed(purchase.TransactionId);
                 _saveProgress();
+                AnalyticsEvents.LogPurchaseSucceeded(purchase.ProductId, _reward, purchase.TransactionId);
             }
 
             _iapService.ConfirmPurchase(purchase.TransactionId);
@@ -117,6 +118,7 @@ public sealed class StorePresenter : IDisposable
         }
 
         _purchaseInProgress = false;
+        AnalyticsEvents.LogPurchaseFailed(string.IsNullOrEmpty(failure.ProductId) ? _productId : failure.ProductId, failure.Message);
         _view.SetStoreStatus($"Purchase failed: {failure.Message}");
         _view.SetPurchaseInteractable(_iapService.IsInitialized);
     }

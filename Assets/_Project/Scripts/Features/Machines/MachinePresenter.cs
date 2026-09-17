@@ -49,19 +49,25 @@ public class MachinePresenter : IDisposable
 
     private void HandleUnlockClicked()
     {
+        if (_model.State != EMachineState.Locked) return;
+
         double cost = _model.GetUnlockCost();
         if (_wallet.TrySpend(cost))
         {
             _model.Unlock();
+            AnalyticsEvents.LogMachineUnlocked(_model.Config.Id, cost);
         }
     }
 
     private void HandleUpgradeClicked()
     {
+        if (_model.State != EMachineState.Unlocked) return;
+
         double cost = _model.GetCurrentUpgradeCost();
         if (_wallet.TrySpend(cost))
         {
             _model.LevelUp();
+            AnalyticsEvents.LogMachineUpgraded(_model.Config.Id, _model.Level, cost);
         }
     }
 
@@ -69,11 +75,11 @@ public class MachinePresenter : IDisposable
     {
         bool isUnlocked = _model.State == EMachineState.Unlocked;
 
-        // 1. Включаем нужную панель (Unlocked или Locked)
+        // 1. Р’РєР»СЋС‡Р°РµРј РЅСѓР¶РЅСѓСЋ РїР°РЅРµР»СЊ (Unlocked РёР»Рё Locked)
         _view.SetState(isUnlocked);
         _view.SetStateText(isUnlocked ? "Unlocked" : "Locked");
 
-        // 2. Обновляем тексты
+        // 2. РћР±РЅРѕРІР»СЏРµРј С‚РµРєСЃС‚С‹
         int level = _model.Level;
         double production = _model.GetCurrentProduction();
         double upgradeCost = _model.GetCurrentUpgradeCost();
@@ -81,7 +87,7 @@ public class MachinePresenter : IDisposable
 
         _view.UpdateView(level, production, upgradeCost, unlockCost);
 
-        // 3. Обновляем кликабельность
+        // 3. РћР±РЅРѕРІР»СЏРµРј РєР»РёРєР°Р±РµР»СЊРЅРѕСЃС‚СЊ
         UpdateInteractableState();
     }
 
@@ -89,8 +95,8 @@ public class MachinePresenter : IDisposable
     {
         bool isUnlocked = _model.State == EMachineState.Unlocked;
 
-        // Если машина закрыта — проверяем цену Unlock
-        // Если машина открыта — кнопка Unlock вообще не нужна, а Upgrade проверяем по балансу
+        // Р•СЃР»Рё РјР°С€РёРЅР° Р·Р°РєСЂС‹С‚Р° вЂ” РїСЂРѕРІРµСЂСЏРµРј С†РµРЅСѓ Unlock
+        // Р•СЃР»Рё РјР°С€РёРЅР° РѕС‚РєСЂС‹С‚Р° вЂ” РєРЅРѕРїРєР° Unlock РІРѕРѕР±С‰Рµ РЅРµ РЅСѓР¶РЅР°, Р° Upgrade РїСЂРѕРІРµСЂСЏРµРј РїРѕ Р±Р°Р»Р°РЅСЃСѓ
         bool canUnlock = !isUnlocked && _wallet.CanAfford(_model.GetUnlockCost());
         bool canUpgrade = isUnlocked && _wallet.CanAfford(_model.GetCurrentUpgradeCost());
 

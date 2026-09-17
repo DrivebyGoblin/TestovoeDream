@@ -1,5 +1,5 @@
 using System;
-using UnityEngine;
+
 
 public class BoostService
 {
@@ -8,7 +8,7 @@ public class BoostService
     private readonly float _defaultValue = 1f;
     private float _remainingTime;
 
-    // Ôëàã èç êîíôèãà: âêëþ÷åíà ëè ôè÷à áóñòà âîîáùå
+    // Ð¤Ð»Ð°Ð³ Ð¸Ð· ÐºÐ¾Ð½Ñ„Ð¸Ð³Ð°: Ð²ÐºÐ»ÑŽÑ‡ÐµÐ½Ð° Ð»Ð¸ Ñ„Ð¸Ñ‡Ð° Ð±ÑƒÑÑ‚Ð° Ð²Ð¾Ð¾Ð±Ñ‰Ðµ
     public bool IsFeatureEnabled { get; }
 
     public float CurrentMultiplier => IsActive ? _multiplier : _defaultValue;
@@ -26,9 +26,10 @@ public class BoostService
 
     public void ActivateBoost()
     {
-        if (!IsFeatureEnabled) return;
+        if (!IsFeatureEnabled || _defaultDuration <= 0) return;
 
         _remainingTime = _defaultDuration;
+        AnalyticsEvents.LogBoostStarted(_defaultDuration, _multiplier);
         OnBoostStateChanged?.Invoke();
     }
 
@@ -41,10 +42,12 @@ public class BoostService
         if (_remainingTime <= 0)
         {
             _remainingTime = 0;
+            AnalyticsEvents.LogBoostFinished();
             OnBoostStateChanged?.Invoke();
         }
     }
-    // Ìåòîä äëÿ ÿâíîé óñòàíîâêè âðåìåíè (èñïîëüçóåòñÿ ïðè çàãðóçêå îôôëàéí-ïðîãðåññà)
+
+    // ÐœÐµÑ‚Ð¾Ð´ Ð´Ð»Ñ ÑÐ²Ð½Ð¾Ð¹ ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ¸ Ð²Ñ€ÐµÐ¼ÐµÐ½Ð¸ (Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·ÑƒÐµÑ‚ÑÑ Ð¿Ñ€Ð¸ Ð·Ð°Ð³Ñ€ÑƒÐ·ÐºÐµ Ð¾Ñ„Ñ„Ð»Ð°Ð¹Ð½-Ð¿Ñ€Ð¾Ð³Ñ€ÐµÑÑÐ°)
     public void SetRemainingTime(float time)
     {
         _remainingTime = Math.Max(0f, time);

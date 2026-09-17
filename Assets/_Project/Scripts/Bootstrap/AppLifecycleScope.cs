@@ -132,19 +132,34 @@ public class AppLifecycleScope : MonoBehaviour
             return;
         }
 
+        DateTime currentTime = DateTime.UtcNow;
+        double elapsedSeconds = Math.Max(0, (currentTime - lastExit.ToUniversalTime()).TotalSeconds);
         double baseProduction = _factoryModel.GetBaseProductionWithoutBoost();
         OfflineProgressService.OfflineResult result = _offlineService.Calculate(
             lastExitTime: lastExit,
-            currentTime: DateTime.UtcNow,
+            currentTime: currentTime,
             maxOfflineDuration: _config.MaxOfflineSeconds,
-            remainingBoostTime: data.BoostRemainingTime,
+            remainingBoostTime: _boostService.IsFeatureEnabled ? data.BoostRemainingTime : 0f,
             boostMultiplier: _config.BoostMultiplier,
             baseProductionPerSecond: baseProduction);
 
         _wallet.Add(result.EarnedCoins);
 
-        float remainingBoostTime = Mathf.Max(0f, data.BoostRemainingTime - result.ElapsedSeconds);
+        if (result.EarnedCoins > 0)
+        {
+            AnalyticsEvents.LogOfflineIncomeApplied(result.EarnedCoins, result.ElapsedSeconds);
+        }
+
+        // Boost uses real elapsed time, independently of the offline income cap.
+        float remainingBoostTime = (float)Math.Max(0, data.BoostRemainingTime - elapsedSeconds);
         _boostService.SetRemainingTime(remainingBoostTime);
+        if (_boostService.IsFeatureEnabled && data.BoostRemainingTime > 0 && remainingBoostTime <= 0)
+        {
+            AnalyticsEvents.LogBoostFinished(finishedOffline: true);
+        }
+
+        // Persist the applied income and expired boost so the next launch cannot replay them.
+        SaveGameState();
 
         Debug.Log(
             $"[Offline] Elapsed: {result.ElapsedSeconds:F1}s, " +

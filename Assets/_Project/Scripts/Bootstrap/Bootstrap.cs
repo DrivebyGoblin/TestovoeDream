@@ -21,6 +21,7 @@ public class Bootstrap : MonoBehaviour
     private HeaderPresenter _headerPresenter;
     private StorePresenter _storePresenter;
     private IIAPService _iapService;
+    
     private readonly List<MachinePresenter> _machinePresenters = new List<MachinePresenter>();
 
     private void Awake()
@@ -48,6 +49,11 @@ public class Bootstrap : MonoBehaviour
             Debug.LogError("[Bootstrap] Game configuration is invalid.");
             return;
         }
+        
+        AnalyticsFacade analytics = new AnalyticsFacade();
+        analytics.RegisterProvider(new ConsoleAnalyticsProvider());
+        AnalyticsEvents.Initialize(analytics);
+        AnalyticsEvents.LogGameStarted();
 
         _wallet = new WalletModel();
         _boostService = new BoostService(config.IsBoostEnabled, config.BoostMultiplier, config.BoostDurationSeconds);
