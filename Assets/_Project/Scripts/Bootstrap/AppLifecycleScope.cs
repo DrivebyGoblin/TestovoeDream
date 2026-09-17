@@ -13,6 +13,9 @@ public class AppLifecycleScope : MonoBehaviour
     private OfflineProgressService _offlineService;
     private PurchaseHistory _purchaseHistory;
     private GameConfig _config;
+    private bool _stateRestored;
+
+    public ApplicationSession Session { get; } = new ApplicationSession();
 
     public void Construct(
         WalletModel wallet,
@@ -36,9 +39,34 @@ public class AppLifecycleScope : MonoBehaviour
 
     private void OnApplicationFocus(bool hasFocus)
     {
-        if (!hasFocus)
+        if (_wallet == null) return;
+        bool wasSuspended = Session.IsSuspended;
+        DateTime now = DateTime.UtcNow;
+        HandleSessionChange(wasSuspended, Session.SetFocus(hasFocus, now));
+    }
+
+    private void OnApplicationPause(bool isPaused)
+    {
+        if (_wallet == null) return;
+        bool wasSuspended = Session.IsSuspended;
+        DateTime now = DateTime.UtcNow;
+        HandleSessionChange(wasSuspended, Session.SetPause(isPaused, now));
+    }
+
+    private void HandleSessionChange(bool wasSuspended, DateTime? resumedFrom)
+    {
+        if (!wasSuspended && Session.IsSuspended)
         {
             SaveGameState();
+        }
+        else if (resumedFrom.HasValue)
+        {
+            // Models are already loaded. Only apply the elapsed interval, never reload balance/levels.
+            ApplyOfflineProgress(new SaveData
+            {
+                LastExitTime = resumedFrom.Value.ToString("o", CultureInfo.InvariantCulture),
+                BoostRemainingTime = _boostService.RemainingTime
+            });
         }
     }
 
@@ -57,7 +85,7 @@ public class AppLifecycleScope : MonoBehaviour
         SaveData data = new SaveData
         {
             Balance = _wallet.Balance,
-            LastExitTime = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+            LastExitTime = (Session.SuspendedAt ?? DateTime.UtcNow).ToString("o", CultureInfo.InvariantCulture),
             BoostRemainingTime = _boostService.RemainingTime,
             Machines = new List<MachineSaveData>(),
             ProcessedPurchaseIds = _purchaseHistory.CreateSnapshot()
@@ -79,6 +107,9 @@ public class AppLifecycleScope : MonoBehaviour
 
     public void RestoreStateAndProcessOffline()
     {
+        if (_stateRestored) return;
+        _stateRestored = true;
+
         SaveData data = _saveService.Load();
         if (data == null)
         {

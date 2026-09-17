@@ -31,9 +31,9 @@ public class Bootstrap : MonoBehaviour
 
     private void Initialize()
     {
-        if (_gameLoop == null)
+        if (_gameLoop == null || _lifecycleScope == null)
         {
-            Debug.LogError("[Bootstrap] GameLoop is missing.");
+            Debug.LogError("[Bootstrap] GameLoop or AppLifecycleScope is missing.");
             return;
         }
 
@@ -68,7 +68,7 @@ public class Bootstrap : MonoBehaviour
 
         PurchaseHistory purchaseHistory = new PurchaseHistory();
         InitializePersistence(config, machineModels, purchaseHistory);
-        _gameLoop.Construct(_boostService, _factoryModel);
+        _gameLoop.Construct(_boostService, _factoryModel, _lifecycleScope.Session);
         InitializePurchasing(config, purchaseHistory);
     }
 
